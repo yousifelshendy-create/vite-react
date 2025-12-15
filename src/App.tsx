@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Users,
@@ -12,56 +12,29 @@ import {
   ExternalLink,
   Target,
   Zap,
-  QrCode,
   X,
-  BarChart2,
-  Lock,
   ShieldCheck,
   ChevronRight,
   Bell,
-  Search,
   ArrowRight
 } from "lucide-react";
-import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  query, 
-  getDocs, 
-  serverTimestamp 
-} from "firebase/firestore";
-import { 
-  getAuth, 
-  signInAnonymously, 
-  signInWithCustomToken,
-  onAuthStateChanged 
-} from "firebase/auth";
 
-// --- FIREBASE CONFIGURATION (Safe Handling) ---
-// In a real Vercel app, you would use process.env.REACT_APP_FIREBASE_CONFIG
-let firebaseConfig;
-try {
-  firebaseConfig = JSON.parse(__firebase_config);
-} catch (e) {
-  // Mock config for preview purposes if env variable is missing
-  firebaseConfig = { apiKey: "mock-key", authDomain: "mock.firebaseapp.com", projectId: "mock-project" };
-}
+/**
+ * SCOME PRO APP
+ * Deployment-ready version.
+ * Uses localStorage for analytics to ensure zero-config deployment.
+ */
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-// --- DATA ---
+// --- DATA CONFIGURATION ---
 const APP_DATA = {
   title: "SCOME",
   subtitle: "Medical Education Hub",
   announcement: "📢 Upcoming: AMR Workshop Registration closes in 24h!",
+  mission: "To advocate for the improvement of medical education worldwide.", // Added missing mission field
   mainVision: {
     title: "Future Curriculum",
     description: "Integrating digital health & soft skills.",
-    tags: ["Digital Literacy", "Peer Teaching"],
+    points: ["Digital Literacy", "Peer Teaching"], // Renamed from 'tags' to 'points' to match usage
   },
   currentTheme: {
     title: "AMR & Ophthalmology",
@@ -85,7 +58,7 @@ const TEAM_MEMBERS = [
 const EVENTS = [
   {
     id: 1,
-    title: "AMR & Ophthalmology",
+    title: "AMR and Ophthalmology",
     date: "Dec 3", 
     status: "upcoming",
     link: "https://scome-amr-ophthalmology.my.canva.site/photography-portfolio-website-in-black-and-white-grey-dark-modern-minimal-style",
@@ -99,9 +72,46 @@ const RESOURCES = [
   { id: 3, title: "Workshop Slides", type: "PPT", size: "5.0 MB" },
 ];
 
+// --- ANALYTICS SERVICE (Local Storage Fallback) ---
+const AnalyticsService = {
+  recordVisit: () => {
+    try {
+      // 1. Check if session already counted
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem("scome_session_logged")) return;
+
+      // 2. Get existing history
+      const historyStr = localStorage.getItem("scome_analytics_history");
+      const history = historyStr ? JSON.parse(historyStr) : [];
+      
+      // 3. Add new visit
+      const today = new Date().toISOString().split('T')[0];
+      history.push({ date: today, timestamp: Date.now() });
+      
+      // 4. Save
+      localStorage.setItem("scome_analytics_history", JSON.stringify(history));
+      sessionStorage.setItem("scome_session_logged", "true");
+    } catch (e) {
+      console.warn("Analytics blocked (likely restricted environment):", e);
+    }
+  },
+
+  getStats: () => {
+    try {
+      const historyStr = localStorage.getItem("scome_analytics_history");
+      const history = historyStr ? JSON.parse(historyStr) : [];
+      return {
+        total: history.length,
+        history: history
+      };
+    } catch (e) {
+      return { total: 0, history: [] };
+    }
+  }
+};
+
 // --- COMPONENTS ---
 
-// 1. Onboarding Modal (New Feature)
+// 1. Onboarding Modal
 const WelcomeModal = ({ onComplete }) => (
   <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
     <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl border-4 border-blue-500/20">
@@ -120,39 +130,23 @@ const WelcomeModal = ({ onComplete }) => (
   </div>
 );
 
-// 2. Admin Dashboard (Pro Visuals)
-const AdminDashboard = ({ onClose, user }) => {
+// 2. Admin Dashboard
+const AdminDashboard = ({ onClose }) => {
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [visits, setVisits] = useState([]);
+  const [stats, setStats] = useState({ total: 0, history: [] });
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (password === "SCOME_coreteam_analysis") {
       setUnlocked(true);
-      fetchData();
+      setStats(AnalyticsService.getStats());
     } else {
       setError("Access Denied");
+      setPassword("");
     }
   };
-
-  const fetchData = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      // Mock data fetch logic safe for preview if firebase fails
-      const visitsRef = collection(db, 'artifacts', appId, 'public', 'data', 'visits');
-      const q = query(visitsRef); 
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map(doc => doc.data());
-      setVisits(data);
-    } catch (e) { console.log("Using mock data due to env"); }
-    setLoading(false);
-  };
-
-  const totalVisits = visits.length || 142; // Fallback number for visual demo
 
   if (!unlocked) return (
     <div className="fixed inset-0 z-[100] bg-gray-900/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -179,29 +173,44 @@ const AdminDashboard = ({ onClose, user }) => {
   return (
     <div className="fixed inset-0 z-[100] bg-gray-100 flex flex-col animate-slideUp">
       <div className="bg-white p-6 shadow-sm flex justify-between items-center">
-        <h2 className="font-bold text-xl flex items-center gap-2"><ShieldCheck className="text-emerald-500"/> Analytics</h2>
+        <h2 className="font-bold text-xl flex items-center gap-2">
+            <ShieldCheck className="text-emerald-500"/> Analytics
+        </h2>
         <button onClick={onClose} className="bg-gray-100 p-2 rounded-full"><X size={20}/></button>
       </div>
       <div className="p-6 space-y-6 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-blue-600 text-white p-5 rounded-2xl shadow-lg shadow-blue-600/20">
             <div className="text-blue-200 text-xs uppercase font-bold mb-1">Total Traffic</div>
-            <div className="text-4xl font-extrabold">{totalVisits}</div>
+            <div className="text-4xl font-extrabold">{stats.total}</div>
           </div>
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-            <div className="text-gray-400 text-xs uppercase font-bold mb-1">Active Now</div>
-            <div className="text-4xl font-extrabold text-gray-800">3</div>
+            <div className="text-gray-400 text-xs uppercase font-bold mb-1">Status</div>
+            <div className="text-lg font-bold text-emerald-600">Active</div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-64 flex items-center justify-center text-gray-400 text-sm">
-          Chart Visualization Area
+        
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+           <h3 className="font-bold text-gray-700 mb-4">Traffic Log</h3>
+           <div className="text-sm text-gray-500">
+             {stats.history.length === 0 ? "No visits yet." : (
+               <ul className="space-y-2">
+                 {stats.history.slice(-10).reverse().map((h, i) => (
+                   <li key={i} className="flex justify-between border-b border-gray-100 pb-2">
+                     <span>{h.date}</span>
+                     <span className="font-mono text-xs opacity-50">{new Date(h.timestamp).toLocaleTimeString()}</span>
+                   </li>
+                 ))}
+               </ul>
+             )}
+           </div>
         </div>
       </div>
     </div>
   );
 };
 
-// 3. Components
+// 3. Header Component
 const Header = () => (
   <div className="relative z-10 pt-12 pb-6 px-6">
     <div className="flex justify-between items-center">
@@ -264,7 +273,7 @@ const HomeView = () => (
 
     {/* Links */}
     <div className="grid grid-cols-2 gap-4">
-      <a href={APP_DATA.socials.instagram} target="_blank" className="bg-white p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition border border-gray-100">
+      <a href={APP_DATA.socials.instagram} target="_blank" rel="noreferrer" className="bg-white p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition border border-gray-100">
         <Instagram className="text-pink-600" />
         <span className="text-xs font-bold text-gray-600">Instagram</span>
       </a>
@@ -311,6 +320,7 @@ const TeamView = ({ openAdmin }) => (
     <a 
       href="https://docs.google.com/forms/d/e/1FAIpQLScaz6jhLKriaPWS7oevu8e_o_7VPnTapfYYnJ55FMhOdmenDg/viewform"
       target="_blank"
+      rel="noreferrer"
       className="block mt-6"
     >
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-1 rounded-2xl shadow-xl">
@@ -334,7 +344,7 @@ const EventsView = () => (
       {EVENTS.map(e => (
         <div key={e.id} className="relative">
           <div className="absolute -left-[31px] top-0 w-6 h-6 bg-blue-500 rounded-full border-4 border-blue-900"></div>
-          <a href={e.link} target="_blank" className="block bg-white rounded-3xl shadow-lg overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+          <a href={e.link} target="_blank" rel="noreferrer" className="block bg-white rounded-3xl shadow-lg overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
             {e.poster && (
               <div className="h-48 overflow-hidden relative">
                 <img src={e.poster} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Event" />
@@ -395,44 +405,23 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [showWelcome, setShowWelcome] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check if first visit
-    const visited = localStorage.getItem("scome_welcome_seen");
-    if (!visited) setShowWelcome(true);
+    // Check if first visit for onboarding
+    try {
+        const visited = localStorage.getItem("scome_welcome_seen");
+        if (!visited) setShowWelcome(true);
+    } catch(e) {}
 
-    // Auth & Visits
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u && !sessionStorage.getItem('visit_logged')) {
-        try {
-          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'visits'), {
-            timestamp: serverTimestamp(),
-          });
-          sessionStorage.setItem('visit_logged', 'true');
-        } catch(e) {}
-      }
-    });
-
-    // Safe Login
-    const initAuth = async () => {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        } catch (e) { console.log("Auth init failed in preview"); }
-    };
-    initAuth();
-
-    return () => unsubscribe();
+    // Record visit
+    AnalyticsService.recordVisit();
   }, []);
 
   const closeWelcome = () => {
     setShowWelcome(false);
-    localStorage.setItem("scome_welcome_seen", "true");
+    try {
+        localStorage.setItem("scome_welcome_seen", "true");
+    } catch(e) {}
   };
 
   return (
@@ -474,7 +463,7 @@ export default function App() {
         </nav>
 
         {showWelcome && <WelcomeModal onComplete={closeWelcome} />}
-        {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} user={user} />}
+        {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
         
       </div>
     </div>
