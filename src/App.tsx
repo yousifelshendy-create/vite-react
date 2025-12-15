@@ -449,6 +449,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 font-sans text-gray-900">
+      {/* Dynamic Background */}
       <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-600/20 to-transparent"></div>
         <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-purple-600/20 blur-[100px] rounded-full"></div>
