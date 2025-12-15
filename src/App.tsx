@@ -20,21 +20,50 @@ import {
 } from "lucide-react";
 
 /**
- * SCOME PRO APP
- * Deployment-ready version.
- * Uses localStorage for analytics to ensure zero-config deployment.
+ * SCOME PRO APP (TypeScript Version)
+ * - Adapted for .tsx files
+ * - Uses localStorage for analytics (Deployment Safe)
+ * - Glassmorphism UI
  */
 
+// --- TYPES ---
+interface VisionData {
+  title: string;
+  description: string;
+  points: string[];
+}
+
+interface ThemeData {
+  title: string;
+  description: string;
+  status: string;
+}
+
+interface SocialsData {
+  instagram: string;
+  email: string;
+}
+
+interface AppData {
+  title: string;
+  subtitle: string;
+  announcement: string;
+  mission: string;
+  mainVision: VisionData;
+  currentTheme: ThemeData;
+  socials: SocialsData;
+}
+
 // --- DATA CONFIGURATION ---
-const APP_DATA = {
+const APP_DATA: AppData = {
   title: "SCOME",
   subtitle: "Medical Education Hub",
   announcement: "📢 Upcoming: AMR Workshop Registration closes in 24h!",
-  mission: "To advocate for the improvement of medical education worldwide.", // Added missing mission field
+  mission: "To advocate for the improvement of medical education worldwide through student-led initiatives.",
   mainVision: {
     title: "Future Curriculum",
     description: "Integrating digital health & soft skills.",
-    points: ["Digital Literacy", "Peer Teaching"], // Renamed from 'tags' to 'points' to match usage
+    points: ["Digital Literacy", "Peer Teaching"],
   },
   currentTheme: {
     title: "AMR & Ophthalmology",
@@ -76,18 +105,14 @@ const RESOURCES = [
 const AnalyticsService = {
   recordVisit: () => {
     try {
-      // 1. Check if session already counted
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem("scome_session_logged")) return;
 
-      // 2. Get existing history
       const historyStr = localStorage.getItem("scome_analytics_history");
       const history = historyStr ? JSON.parse(historyStr) : [];
       
-      // 3. Add new visit
       const today = new Date().toISOString().split('T')[0];
       history.push({ date: today, timestamp: Date.now() });
       
-      // 4. Save
       localStorage.setItem("scome_analytics_history", JSON.stringify(history));
       sessionStorage.setItem("scome_session_logged", "true");
     } catch (e) {
@@ -111,8 +136,7 @@ const AnalyticsService = {
 
 // --- COMPONENTS ---
 
-// 1. Onboarding Modal
-const WelcomeModal = ({ onComplete }) => (
+const WelcomeModal = ({ onComplete }: { onComplete: () => void }) => (
   <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
     <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl border-4 border-blue-500/20">
       <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -130,14 +154,13 @@ const WelcomeModal = ({ onComplete }) => (
   </div>
 );
 
-// 2. Admin Dashboard
-const AdminDashboard = ({ onClose }) => {
+const AdminDashboard = ({ onClose }: { onClose: () => void }) => {
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
-  const [stats, setStats] = useState({ total: 0, history: [] });
+  const [stats, setStats] = useState<{ total: number; history: any[] }>({ total: 0, history: [] });
 
-  const handleLogin = (e) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === "SCOME_coreteam_analysis") {
       setUnlocked(true);
@@ -195,7 +218,7 @@ const AdminDashboard = ({ onClose }) => {
            <div className="text-sm text-gray-500">
              {stats.history.length === 0 ? "No visits yet." : (
                <ul className="space-y-2">
-                 {stats.history.slice(-10).reverse().map((h, i) => (
+                 {stats.history.slice(-10).reverse().map((h: any, i: number) => (
                    <li key={i} className="flex justify-between border-b border-gray-100 pb-2">
                      <span>{h.date}</span>
                      <span className="font-mono text-xs opacity-50">{new Date(h.timestamp).toLocaleTimeString()}</span>
@@ -210,7 +233,6 @@ const AdminDashboard = ({ onClose }) => {
   );
 };
 
-// 3. Header Component
 const Header = () => (
   <div className="relative z-10 pt-12 pb-6 px-6">
     <div className="flex justify-between items-center">
@@ -222,7 +244,6 @@ const Header = () => (
         <HeartPulse className="text-white" size={28} />
       </div>
     </div>
-    {/* News Ticker */}
     <div className="mt-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3 flex items-center gap-3">
       <div className="bg-orange-500 rounded-full p-1"><Bell size={12} className="text-white"/></div>
       <p className="text-white text-xs font-medium truncate">{APP_DATA.announcement}</p>
@@ -230,11 +251,8 @@ const Header = () => (
   </div>
 );
 
-// --- VIEWS ---
-
 const HomeView = () => (
   <div className="space-y-6 pb-24">
-    {/* Hero Card */}
     <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-sm border border-white">
       <div className="flex items-center gap-2 mb-4 text-blue-600">
         <Award size={20} />
@@ -243,7 +261,6 @@ const HomeView = () => (
       <p className="text-gray-600 leading-relaxed font-medium">{APP_DATA.mission}</p>
     </div>
 
-    {/* Vision Card (Glass) */}
     <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl shadow-xl text-white relative overflow-hidden">
       <Target className="absolute right-[-20px] top-[-20px] text-white/10" size={150} />
       <div className="relative z-10">
@@ -258,7 +275,6 @@ const HomeView = () => (
       </div>
     </div>
 
-    {/* Current Campaign */}
     <div className="bg-white p-1 rounded-3xl shadow-sm border border-gray-100">
       <div className="bg-emerald-50 rounded-[20px] p-6 border border-emerald-100 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl"></div>
@@ -271,7 +287,6 @@ const HomeView = () => (
       </div>
     </div>
 
-    {/* Links */}
     <div className="grid grid-cols-2 gap-4">
       <a href={APP_DATA.socials.instagram} target="_blank" rel="noreferrer" className="bg-white p-4 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition border border-gray-100">
         <Instagram className="text-pink-600" />
@@ -285,7 +300,7 @@ const HomeView = () => (
   </div>
 );
 
-const TeamView = ({ openAdmin }) => (
+const TeamView = ({ openAdmin }: { openAdmin: () => void }) => (
   <div className="space-y-4 pb-24">
     <div onClick={openAdmin} className="bg-gray-900 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between cursor-pointer active:scale-95 transition-transform">
       <div className="flex items-center gap-3">
@@ -407,13 +422,11 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if first visit for onboarding
     try {
         const visited = localStorage.getItem("scome_welcome_seen");
         if (!visited) setShowWelcome(true);
     } catch(e) {}
 
-    // Record visit
     AnalyticsService.recordVisit();
   }, []);
 
@@ -424,9 +437,18 @@ export default function App() {
     } catch(e) {}
   };
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home": return <HomeView />;
+      case "team": return <TeamView openAdmin={() => setShowAdmin(true)} />;
+      case "events": return <EventsView />;
+      case "resources": return <ResourcesView />;
+      default: return <HomeView />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 font-sans text-gray-900">
-      {/* Dynamic Background */}
       <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-600/20 to-transparent"></div>
         <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-purple-600/20 blur-[100px] rounded-full"></div>
@@ -437,13 +459,9 @@ export default function App() {
         <Header />
         
         <main className="px-6 relative z-10">
-          {activeTab === 'home' && <HomeView />}
-          {activeTab === 'team' && <TeamView openAdmin={() => setShowAdmin(true)} />}
-          {activeTab === 'events' && <EventsView />}
-          {activeTab === 'resources' && <ResourcesView />}
+          {renderContent()}
         </main>
         
-        {/* Navigation Bar */}
         <nav className="fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl shadow-black/20 z-50 max-w-[calc(28rem-3rem)] mx-auto rounded-2xl h-16 flex justify-around items-center px-2">
           {[
             { id: 'home', icon: Home, label: 'Home' },
