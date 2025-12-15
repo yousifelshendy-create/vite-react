@@ -9,6 +9,21 @@
     <!-- CRITICAL: This enables the glassmorphism and colors -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- FIX: Forces the app to fill the screen so centering works -->
+    <style>
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #111827; /* Matches the dark theme background */
+        display: flex;             /* Helps ensure the child fills space */
+        justify-content: center;   /* Centers the app horizontally */
+      }
+      #root {
+        display: block;            /* React root behaves as a block */
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
